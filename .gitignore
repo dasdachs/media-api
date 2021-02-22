@@ -1,0 +1,22 @@
+# Python
+__pycache__
+*.py[cod]
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Venv
+.venv
+
+# Project
+/tmp
+.vscode
+.idea
