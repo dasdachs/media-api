@@ -7,11 +7,12 @@ from fastapi import APIRouter, File, Form, UploadFile, BackgroundTasks, status, 
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app.settings import settings
+from app.auth import validate_api_key
 from app.file_storage import clean_up, save_uploaded_file, SavedFile
+from app.settings import settings
 
 
-video_router = APIRouter(prefix="/api/v1/video", tags=["video"])
+video_router = APIRouter(prefix="/video")
 
 
 class VideoInfo(BaseModel):
