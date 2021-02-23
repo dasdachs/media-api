@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import cast, TypedDict, Optional
 
 from fastapi import File, UploadFile, HTTPException, status
 
@@ -35,7 +35,13 @@ async def save_uploaded_file(file: UploadFile = File(...)) -> SavedFile:
         p = Path(".", settings.file_storage, settings.uploaded_files_dir, file.filename)
 
         content = await file.read()
-        p.write_bytes(content)
+
+        if isinstance(content, str):
+            content = content.encode("utf-8")
+
+        content_as_bytes = cast(bytes, content)
+
+        p.write_bytes(content_as_bytes)
 
         return {"path": str(p.resolve()), "file": file}
     except OSError:

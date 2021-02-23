@@ -1,15 +1,14 @@
 import os.path
 from pathlib import Path
-from typing import Optional, Dict
+from typing import cast, Dict, Optional
 
 import av
 from fastapi import APIRouter, File, Form, UploadFile, BackgroundTasks, status, Depends
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from fastapi.responses import FileResponse
-
-from ..settings import settings
-from ..file_storage import clean_up, save_uploaded_file
+from app.settings import settings
+from app.file_storage import clean_up, save_uploaded_file, SavedFile
 
 
 audio_router = APIRouter(prefix="/api/v1/audio", tags=["audio"])
@@ -25,8 +24,9 @@ class AudioInfo(BaseModel):
 
 @audio_router.post("/info", status_code=status.HTTP_200_OK, response_model=AudioInfo)
 async def get_audio_info(
-    background_tasks: BackgroundTasks, saved_file: str = Depends(save_uploaded_file)
-):
+    background_tasks: BackgroundTasks,
+    saved_file: SavedFile = Depends(save_uploaded_file),
+) -> AudioInfo:
     """Get info about the data"""
     file = saved_file.get("file")
     if file:
@@ -50,22 +50,18 @@ async def get_audio_info(
 @audio_router.post("/", status_code=status.HTTP_200_OK)
 async def convert_audio(
     background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
+    saved_file: SavedFile = Depends(save_uploaded_file),
     outFormat: str = Form(...),
-) -> None:
-    # Save files to tmp folder and initiate cleanup task
-    background_tasks.add_task(clean_up, file.filename)
-    p = Path(".", settings.file_storage, settings.uploaded_files_dir, file.filename)
-    content = await file.read()
-    p.write_bytes(content)
+) -> FileResponse:
+    f = saved_file.get("file")
+    file = cast(UploadFile, f)
 
-    # Transform the file
+    if file:
+        background_tasks.add_task(clean_up, file.filename)
+
     filename = os.path.splitext(file.filename)[0]
-    inp = av.open(
-        os.path.join(
-            ".", settings.file_storage, settings.uploaded_files_dir, file.filename
-        )
-    )
+    inp = av.open(saved_file.get("path"))
+
     out_file_path = os.path.join(
         ".",
         settings.file_storage,

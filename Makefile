@@ -24,6 +24,8 @@ clean:
 	rm -rf ${VENV}
 	find . -iname "*.pyc" -delete
 
+lint:
+	. ${VENV}/bin/activate; mypy app
 
 test:
 	. ${VENV}/bin/activate; pytest -v
