@@ -3,13 +3,13 @@ from pathlib import Path
 from typing import Optional, Dict
 
 import av
-from fastapi import APIRouter, File, Form, UploadFile, BackgroundTasks
+from fastapi import APIRouter, File, Form, UploadFile, BackgroundTasks, status, Depends
 from pydantic import BaseModel
 
 from fastapi.responses import FileResponse
 
 from ..settings import settings
-from ..file_storage import clean_up
+from ..file_storage import clean_up, save_uploaded_file
 
 
 audio_router = APIRouter(prefix="/api/v1/audio", tags=["audio"])
@@ -23,21 +23,16 @@ class AudioInfo(BaseModel):
     size: int
 
 
-# TODO: move shared logic to dependencies
-@audio_router.post("/info", response_model=AudioInfo)
+@audio_router.post("/info", status_code=status.HTTP_200_OK, response_model=AudioInfo)
 async def get_audio_info(
-    background_tasks: BackgroundTasks, file: UploadFile = File(...)
+    background_tasks: BackgroundTasks, saved_file: str = Depends(save_uploaded_file)
 ):
     """Get info about the data"""
-    background_tasks.add_task(clean_up, file.filename)
-    p = Path(".", settings.file_storage, settings.uploaded_files_dir, file.filename)
-    content = await file.read()
-    p.write_bytes(content)
-    inp = av.open(
-        os.path.join(
-            ".", settings.file_storage, settings.uploaded_files_dir, file.filename
-        )
-    )
+    file = saved_file.get("file")
+    if file:
+        background_tasks.add_task(clean_up, file.filename)
+
+    inp = av.open(saved_file.get("path"))
 
     info = AudioInfo(
         info=inp.dumps_format(),
@@ -52,7 +47,7 @@ async def get_audio_info(
     return info
 
 
-@audio_router.post("/")
+@audio_router.post("/", status_code=status.HTTP_200_OK)
 async def convert_audio(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),

@@ -18,5 +18,6 @@ output/*/index.html
 
 # Project
 /tmp
+/sample
 .vscode
 .idea

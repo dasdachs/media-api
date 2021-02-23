@@ -25,4 +25,7 @@ clean:
 	find . -iname "*.pyc" -delete
 
 
-.PHONY: start install install-devinit prod-init upgrade-pip clean
+test:
+	. ${VENV}/bin/activate; pytest -v
+
+.PHONY: start install install-devinit prod-init upgrade-pip clean test

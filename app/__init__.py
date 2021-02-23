@@ -1,11 +1,12 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 
+from .auth import validate_api_key
+from .file_storage import clean_up
 from .middleware import SecureHeadersMiddleware
 from .routers.audio import audio_router
 from .settings import settings
-from .file_storage import clean_up
 
 
 def app_factory():
@@ -23,5 +24,9 @@ def app_factory():
 
     app.add_middleware(SecureHeadersMiddleware)
     app.include_router(audio_router)
+
+    @app.get("/api/v1/test")
+    async def test_path(valid_api_key: None = Depends(validate_api_key)):
+        return {"authenticated": "yes"}
 
     return app
